@@ -1,0 +1,13 @@
+101,Idly,5.25,1
+102,Dosa,10.5,1
+103,Vada,6.3,1
+104,Pongal,7.35,1
+200,South Indian Thali,15.75,2
+201,North Indian Thali,15.75,2
+202,Mini Thali,11.55,2
+203,Unlimited Meals,21.0,2
+302,Roti,2.0,3
+303,Naan,3.0,3
+304,Panner Butter Masala,17.0,3
+401,Gulab Jamun,14.0,4
+402,Ice cream,12.0,4
