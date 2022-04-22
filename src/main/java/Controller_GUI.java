@@ -19,15 +19,16 @@ public class Controller_GUI
 
     public Controller_GUI()
     {
-        this.cDatabase = new Database();
         try
         {
-            cDatabase.loadFiles();
+            this.cDatabase = new Database();
+            cDatabase.loadData();
         }
         catch(DatabaseException de)
         {
-            System.out.println(de.getErrMessage());
+            System.out.println(de.getErrMessage()); // stack trace better
             System.exit(0);
+            throw new IllegalStateException(); // to skip the initialization of cDatabase O_O
         }
         
         cView = new UserInterface_GUI( this);

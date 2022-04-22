@@ -1,25 +1,66 @@
+import com.mysql.cj.jdbc.MysqlDataSource;
+
+import java.sql.*;
 import java.util.*;
 import java.io.*;
 import java.lang.*;
 import java.util.Comparator;
 
 public class Database {
-    private final static String STAFF_FILE = "dataFiles/staff.txt";
-    private final static String MANAGER_FILE = "dataFiles/manager.txt";
     private final static String MENU_FILE = "dataFiles/menu_item.txt";
     private final static String REPORT_FILE = "dataFiles/reports/report_";
     private final static String PAYMENT_FILE = "dataFiles/reports/payment_";
-    private final static String WAGE_INFO_FILE = "dataFiles/wage_info.txt";
+
+    private final static String host = "localhost";
+    private final static int port = 3306;
+    private final static String database = "restaurant";
+    private final static String user = "root";
+    private final static String password = "1234";
 
     private final ArrayList<Staff> staffList = new ArrayList<>();
     private final ArrayList<MenuItem> menuList = new ArrayList<>();
     private final ArrayList<Order> orderList = new ArrayList<>();
 
-    int todaysOrderCounts;
+    private int todaysOrderCounts;
+    private final MysqlDataSource ds;
 
     // Constructor
-    public Database() {
-        todaysOrderCounts = 0;  //Load order file??
+    public Database() throws DatabaseException {
+        todaysOrderCounts = 0;  //Load order file?? idk
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver").getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        ds = new MysqlDataSource();
+        ds.setServerName(host);
+        ds.setPort(port);
+        ds.setDatabaseName(database);
+        ds.setUser(user);
+        ds.setPassword(password);
+
+
+/**
+ * Staff - id, first name, last name, password, wage, isManager
+ * Menu - id, name, type, price
+ * Order ? Dont think we need that table
+ */
+        try (Connection connection = ds.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS staff (" +
+                    "id INTEGER PRIMARY KEY NOT NULL," +
+                    "first_name VARCHAR(20) NOT NULL," +
+                    "last_name VARCHAR(20) NOT NULL," +
+                    "password VARCHAR(255) NOT NULL" +
+                    "wage FLOAT(10, 5) NOT NULL," +
+                    "is_manager BOOLEAN NOT NULL DEFAULT FALSE" + // max: 99999.99999  : 10 digits, 5 decimals
+                    ")");
+            // CREATE OTHER TABLES HERE USING statement.execute("");
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
     }
 
     // Getter
@@ -56,6 +97,65 @@ public class Database {
             return re;
         else
             return null;
+    }
+
+    // Manipulate data's
+
+    public void editStaffData(int staffID, String newPassword, String newFirstName, String newLastName) throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE staff SET password = ?, first_name = ?, last_name = ? WHERE id = ?")) {
+            statement.setString(1, newPassword);
+            statement.setString(2, newFirstName);
+            statement.setString(3, newLastName);
+            statement.setInt(4, staffID);
+
+            if (statement.executeUpdate() == 0)
+                throw new DatabaseException("No staff found");
+
+            Staff rStaff = findStaffByID(staffID);
+            rStaff.setPassword(newPassword);
+            rStaff.setLastName(newLastName);
+            rStaff.setFirstName(newFirstName);
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    public void deleteStaff(Staff rStaff) throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM staff WHERE id = ?")) {
+            statement.setInt(1, rStaff.getID());
+            statement.executeUpdate();
+
+            staffList.remove(rStaff);
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+
+    public void addStaff(int newID, String newPassword, String newFirstName, String newLastName, boolean isManager) throws DatabaseException {
+        Staff newStaff;
+        if (isManager)
+            newStaff = new Manager(newID, newLastName, newFirstName, newPassword);
+        else
+            newStaff = new Employee(newID, newLastName, newFirstName, newPassword);
+        staffList.add(newStaff);
+
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "INSERT INTO staff(id, first_name, last_name, password, wage, is_manager) VALUES (?, ?, ?, ?, ?, ?)")) {
+            statement.setInt(1, newStaff.getID());
+            statement.setString(2, newStaff.getFirstName());
+            statement.setString(3, newStaff.getLastName());
+            statement.setString(4, newStaff.getPassword());
+            statement.setDouble(5, newStaff.getWageRate());
+            statement.setBoolean(6, newStaff instanceof Manager);
+
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace(); // database exception
+        }
     }
 
     // Find menu item from ID
@@ -102,34 +202,6 @@ public class Database {
             return re;
         else
             return null;
-    }
-    // Manipulate data's
-
-    public void editStaffData(int staffID, String newPassword, String newFirstName, String newLastName) throws DatabaseException {
-        Staff rStaff = findStaffByID(staffID);
-        rStaff.setPassword(newPassword);
-        rStaff.setLastName(newLastName);
-        rStaff.setFirstName(newFirstName);
-
-        //update employee file
-        updateStaffFile(rStaff instanceof Manager);//update manager file
-    }
-
-    public void deleteStaff(Staff rStaff) throws DatabaseException {
-        staffList.remove(rStaff);
-        if (rStaff instanceof Manager)
-            updateStaffFile(true);
-    }
-
-
-    public void addStaff(int newID, String newPassword, String newFirstName, String newLastName, boolean isManager) throws DatabaseException {
-        Staff newStaff;
-        if (isManager)
-            newStaff = new Manager(newID, newLastName, newFirstName, newPassword);
-        else
-            newStaff = new Employee(newID, newLastName, newFirstName, newPassword);
-        staffList.add(newStaff);
-        updateStaffFile(isManager);
     }
 
     public void editMenuItemData(int id, String newName, double newPrice, byte menuType) throws DatabaseException {
@@ -253,61 +325,34 @@ public class Database {
     }
 
     // File load
-    public void loadFiles() throws DatabaseException {
-        loadStaffFile();
-        loadManagerFile();
+    public void loadData() throws DatabaseException {
+        loadStaff();
         staffList.sort(new StaffComparator());
         loadMenuFile();
-        loadWageInfoFile();
     }
 
-    private void loadStaffFile() throws DatabaseException {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(STAFF_FILE));
-            String line = reader.readLine();
+    private void loadStaff() throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM staff")) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String firstName = resultSet.getString("first_name");
+                    String lastName = resultSet.getString("last_name");
+                    String pass = resultSet.getString("password");
+                    double wageRate = resultSet.getDouble("wage");
+                    boolean isManager = resultSet.getBoolean("is_manager");
 
-            while (line != null) {
-                String[] record = line.split(",");
-
-                String id = record[0].trim();
-                String password = record[1].trim();
-                String firstName = record[2].trim();
-                String lastName = record[3].trim();
-
-                // Add the data from file to the registerCourses array list
-                Employee rEmployee = new Employee(Integer.parseInt(id), lastName, firstName, password);
-                staffList.add(rEmployee);
-                line = reader.readLine();
+                    Staff staff = isManager ?
+                            new Manager(id, lastName, firstName, pass) :
+                            new Employee(id, lastName, firstName, pass); // maybe isManager in Staff ?
+                    staff.setWageRate(wageRate);
+                    staffList.add(staff);
+                }
             }
-            reader.close();
-        } catch (IOException ioe) {
-            String message = ioe.getMessage() + Arrays.toString(ioe.getStackTrace());
-            throw new DatabaseException(message);
-        }
-    }
 
-    private void loadManagerFile() throws DatabaseException {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(MANAGER_FILE));
-            String line = reader.readLine();
-
-            while (line != null) {
-                String[] record = line.split(",");
-
-                String id = record[0].trim();
-                String password = record[1].trim();
-                String firstName = record[2].trim();
-                String lastName = record[3].trim();
-
-                // Add the data from file to the registerCourses array list
-                Manager rManager = new Manager(Integer.parseInt(id), lastName, firstName, password);
-                staffList.add(rManager);
-                line = reader.readLine();
-            }
-            reader.close();
-        } catch (IOException ioe) {
-            String message = ioe.getMessage() + Arrays.toString(ioe.getStackTrace());
-            throw new DatabaseException(message);
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
         }
     }
 
@@ -335,112 +380,7 @@ public class Database {
             throw new DatabaseException(message);
         }
     }
-
-    private void loadWageInfoFile() throws DatabaseException {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(WAGE_INFO_FILE));
-            String line = reader.readLine();
-
-            while (line != null) {
-                String[] record = line.split(",");
-
-                String id = record[0].trim();
-                String rate = record[1].trim();
-
-                double dRate = Double.parseDouble(rate);
-                int iId = Integer.parseInt(id);
-
-                Staff rStaff = findStaffByID(iId);
-                if (rStaff == null) {
-                    throw new DatabaseException("Load wage file error\n Staff ID:" + iId + " is not found.");
-                }
-                rStaff.setWageRate(dRate);
-
-                line = reader.readLine();
-            }
-            reader.close();
-        } catch (Exception ioe) {
-            String message = ioe.getMessage() + Arrays.toString(ioe.getStackTrace());
-            throw new DatabaseException(message);
-        }
-    }
-
-    // File Edit
-    public void updateStaffFile(boolean isManager) throws DatabaseException {
-        Writer writer;
-        String fileName;
-        String tempFileName = "dataFiles/temp.txt";
-
-        if (isManager)
-            fileName = MANAGER_FILE;
-        else
-            fileName = STAFF_FILE;
-
-        staffList.sort(new StaffComparator());
-        File tempFile = new File(tempFileName);
-
-        try {
-            writer = new BufferedWriter(new FileWriter(tempFile));
-
-            for (Staff re : staffList) {
-                //skip writing data
-                if (isManager) {
-                    //skip employee data
-                    if (re instanceof Employee)
-                        continue;
-                } else {
-                    //skip manager data
-                    if (re instanceof Manager)
-                        continue;
-                }
-
-                writer.write(re.getID() + "," + re.getPassword() + "," + re.getFirstName() + "," + re.getLastName() + "\r\n");
-            }
-            writer.flush();
-            writer.close();
-        } catch (IOException e) {
-            String message = e.getMessage() + Arrays.toString(e.getStackTrace());
-            throw new DatabaseException(message);
-        }
-
-        //delete current file
-        File deleteFile = new File(fileName);
-        deleteFile.delete();
-
-        // renames temporally file to new file
-        File newFile = new File(fileName);
-        tempFile.renameTo(newFile);
-
-        updateWageFile();
-    }
-
-    public void updateWageFile() throws DatabaseException {
-        Writer writer;
-        String tempFileName = "dataFiles/temp.txt";
-
-        File tempFile = new File(tempFileName);
-
-        try {
-            writer = new BufferedWriter(new FileWriter(tempFile));
-
-            for (Staff re : staffList) {
-                writer.write(re.getID() + "," + re.getWageRate() + "\r\n");
-            }
-            writer.flush();
-            writer.close();
-        } catch (IOException e) {
-            String message = e.getMessage() + Arrays.toString(e.getStackTrace());
-            throw new DatabaseException(message);
-        }
-
-        //delete current file
-        File deleteFile = new File(WAGE_INFO_FILE);
-        deleteFile.delete();
-
-        // renames temporally file to new file
-        File newFile = new File(WAGE_INFO_FILE);
-        tempFile.renameTo(newFile);
-    }
+    // File edit
 
     public String generateOrderReport(String todaysDate) throws DatabaseException {
         Writer writer;
