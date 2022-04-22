@@ -7,7 +7,6 @@ import java.lang.*;
 import java.util.Comparator;
 
 public class Database {
-    private final static String MENU_FILE = "dataFiles/menu_item.txt";
     private final static String REPORT_FILE = "dataFiles/reports/report_";
     private final static String PAYMENT_FILE = "dataFiles/reports/payment_";
 
@@ -44,7 +43,7 @@ public class Database {
 
 /**
  * Staff - id, first name, last name, password, wage, isManager
- * Menu - id, name, type, price
+ * Menu - id, name, price, type
  * Order ? Dont think we need that table
  */
         try (Connection connection = ds.getConnection();
@@ -57,11 +56,18 @@ public class Database {
                     "wage FLOAT(10, 5) NOT NULL," +
                     "is_manager BOOLEAN NOT NULL DEFAULT FALSE" + // max: 99999.99999  : 10 digits, 5 decimals
                     ")");
-            // CREATE OTHER TABLES HERE USING statement.execute("");
+
+            statement.execute("CREATE TABLE IF NOT EXISTS menu (" +
+                    "id INTEGER PRIMARY KEY NOT NULL," +
+                    "name VARCHAR(20) NOT NULL," +
+                    "price DOUBLE(10, 5) NOT NULL," +
+                    "type SMALLINT NOT NULL" +
+                    ")");
         } catch (SQLException e) {
             throw new DatabaseException(e.getMessage());
         }
     }
+
 
     // Getter
     public ArrayList<Staff> getStaffList() {
@@ -158,6 +164,31 @@ public class Database {
         }
     }
 
+    private void loadStaff() throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM staff")) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String firstName = resultSet.getString("first_name");
+                    String lastName = resultSet.getString("last_name");
+                    String pass = resultSet.getString("password");
+                    double wageRate = resultSet.getDouble("wage");
+                    boolean isManager = resultSet.getBoolean("is_manager");
+
+                    Staff staff = isManager ?
+                            new Manager(id, lastName, firstName, pass) :
+                            new Employee(id, lastName, firstName, pass); // maybe isManager in Staff ?
+                    staff.setWageRate(wageRate);
+                    staffList.add(staff);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
     // Find menu item from ID
     public MenuItem findMenuItemByID(int id) {
         Iterator<MenuItem> it = menuList.iterator();
@@ -180,6 +211,79 @@ public class Database {
         else
             return null;
     }
+
+    public void editMenuItemData(int id, String newName, double newPrice, byte menuType) throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE menu SET name = ?, price = ?, type = ? WHERE id = ?")) {
+            statement.setString(1, newName);
+            statement.setString(2, newPrice);
+            statement.setString(3, menuType);
+            statement.setInt(4, id);
+
+            if (statement.executeUpdate() == 0)
+                throw new DatabaseException("No item found");
+
+            MenuItem rMenuItem = findMenuItemByID(id);
+            rMenuItem.setName(newName);
+            rMenuItem.setPrice(newPrice);
+            rMenuItem.setType(menuType);
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    public void deleteMenuItem(MenuItem rMenuItem) throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM menu WHERE id = ?")) {
+            statement.setInt(1, rMenuItem.getID());
+            statement.executeUpdate();
+
+            menuList.remove(rMenuItem);
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    public void addMenuItem(int newID, String newName, double newPrice, byte newType) throws DatabaseException {
+        MenuItem newMenuItem = new MenuItem(newID, newName, newPrice, newType);
+        menuList.add(newMenuItem);
+        menuList.sort(new MenuItemComparator());
+
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "INSERT INTO menu(id, name, price, type) VALUES (?, ?, ?, ?)")) {
+            statement.setInt(1, newMenuItem.getID());
+            statement.setString(2, newMenuItem.getName());
+            statement.setByte(3, newMenuItem.getPrice());
+            statement.setDouble(4, newMenuItem.getType());
+
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace(); // database exception
+        }
+    }
+
+    private void loadMenuFile() throws DatabaseException {
+        try (Connection connection = ds.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM menu")) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int id = resultSet.getInt("id");
+                    String name = resultSet.getString("name");
+                    Double price = resultSet.getString("price");
+                    Byte type = resultSet.getString("type");
+
+                    MenuItem rMenuItem = new MenuItem(Integer.parseInt(id), name, Double.parseDouble(price), Byte.parseByte(type));
+                    menuList.add(rMenuItem);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException(e.getMessage());
+        }
+    }
+
+    // Order
 
     // Find order from ID
     public Order findOrderByID(int id) {
@@ -204,24 +308,6 @@ public class Database {
             return null;
     }
 
-    public void editMenuItemData(int id, String newName, double newPrice, byte menuType) throws DatabaseException {
-        MenuItem rMenuItem = findMenuItemByID(id);
-        rMenuItem.setName(newName);
-        rMenuItem.setPrice(newPrice);
-        rMenuItem.setType(menuType);
-    }
-
-    public void deleteMenuItem(MenuItem rMenuItem) throws DatabaseException {
-        menuList.remove(rMenuItem);
-    }
-
-    public void addMenuItem(int newID, String newName, double newPrice, byte newType) throws DatabaseException {
-        MenuItem newMenuItem = new MenuItem(newID, newName, newPrice, newType);
-        menuList.add(newMenuItem);
-        menuList.sort(new MenuItemComparator());
-    }
-
-    // Order
     public int addOrder(int staffID, String staffName) {
         int newOrderID = ++todaysOrderCounts;
         Order newOrder = new Order(staffID, staffName);
@@ -331,55 +417,6 @@ public class Database {
         loadMenuFile();
     }
 
-    private void loadStaff() throws DatabaseException {
-        try (Connection connection = ds.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM staff")) {
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    int id = resultSet.getInt("id");
-                    String firstName = resultSet.getString("first_name");
-                    String lastName = resultSet.getString("last_name");
-                    String pass = resultSet.getString("password");
-                    double wageRate = resultSet.getDouble("wage");
-                    boolean isManager = resultSet.getBoolean("is_manager");
-
-                    Staff staff = isManager ?
-                            new Manager(id, lastName, firstName, pass) :
-                            new Employee(id, lastName, firstName, pass); // maybe isManager in Staff ?
-                    staff.setWageRate(wageRate);
-                    staffList.add(staff);
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new DatabaseException(e.getMessage());
-        }
-    }
-
-    private void loadMenuFile() throws DatabaseException {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(MENU_FILE));
-            String line = reader.readLine();
-
-            while (line != null) {
-                String[] record = line.split(",");
-
-                String id = record[0].trim();
-                String name = record[1].trim();
-                String price = record[2].trim();
-                String type = record[3].trim();
-
-                // Add the data from file to the registerCourses array list
-                MenuItem rMenuItem = new MenuItem(Integer.parseInt(id), name, Double.parseDouble(price), Byte.parseByte(type));
-                menuList.add(rMenuItem);
-                line = reader.readLine();
-            }
-            reader.close();
-        } catch (IOException ioe) {
-            String message = ioe.getMessage() + Arrays.toString(ioe.getStackTrace());
-            throw new DatabaseException(message);
-        }
-    }
     // File edit
 
     public String generateOrderReport(String todaysDate) throws DatabaseException {
