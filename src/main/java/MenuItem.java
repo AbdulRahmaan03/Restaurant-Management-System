@@ -1,3 +1,5 @@
+package src.main.java;
+
 public class MenuItem
 {
     //definition of menu item type

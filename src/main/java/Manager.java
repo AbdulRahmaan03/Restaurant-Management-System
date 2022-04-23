@@ -1,3 +1,5 @@
+package src.main.java;
+
 public class Manager extends Staff
 {
     private static final double MINIMUM_RATE = 100.0;

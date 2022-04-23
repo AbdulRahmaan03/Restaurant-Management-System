@@ -1,3 +1,5 @@
+package src.main.java;
+
 public class Employee extends Staff
 {
     private static final double MINIMUM_RATE = 13.5; 

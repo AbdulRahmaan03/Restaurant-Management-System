@@ -1,5 +1,6 @@
-import com.mysql.cj.jdbc.MysqlDataSource;
+package src.main.java;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import java.sql.*;
 import java.util.*;
 import java.io.*;
@@ -41,7 +42,7 @@ public class Database {
         ds.setPassword(password);
 
 
-/**
+/*
  * Staff - id, first name, last name, password, wage, isManager
  * Menu - id, name, price, type
  * Order ? Dont think we need that table
@@ -216,8 +217,8 @@ public class Database {
         try (Connection connection = ds.getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE menu SET name = ?, price = ?, type = ? WHERE id = ?")) {
             statement.setString(1, newName);
-            statement.setString(2, newPrice);
-            statement.setString(3, menuType);
+            statement.setDouble(2, newPrice);
+            statement.setByte(3, menuType);
             statement.setInt(4, id);
 
             if (statement.executeUpdate() == 0)
@@ -254,8 +255,8 @@ public class Database {
                      "INSERT INTO menu(id, name, price, type) VALUES (?, ?, ?, ?)")) {
             statement.setInt(1, newMenuItem.getID());
             statement.setString(2, newMenuItem.getName());
-            statement.setByte(3, newMenuItem.getPrice());
-            statement.setDouble(4, newMenuItem.getType());
+            statement.setDouble(3, newMenuItem.getPrice());
+            statement.setByte(4, newMenuItem.getType());
 
             statement.executeUpdate();
         } catch (SQLException e) {
@@ -270,10 +271,10 @@ public class Database {
                 while (resultSet.next()) {
                     int id = resultSet.getInt("id");
                     String name = resultSet.getString("name");
-                    Double price = resultSet.getString("price");
-                    Byte type = resultSet.getString("type");
+                    Double price = resultSet.getDouble("price");
+                    Byte type = resultSet.getByte("type");
 
-                    MenuItem rMenuItem = new MenuItem(Integer.parseInt(id), name, Double.parseDouble(price), Byte.parseByte(type));
+                    MenuItem rMenuItem = new MenuItem(Integer.parseInt(String.valueOf(id)), name, Double.parseDouble(String.valueOf(price)), Byte.parseByte(String.valueOf(type)));
                     menuList.add(rMenuItem);
                 }
             }
