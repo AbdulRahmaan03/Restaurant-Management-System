@@ -42,19 +42,19 @@ public class Database {
         ds.setPassword(password);
 
 
-/*
- * Staff - id, first name, last name, password, wage, isManager
- * Menu - id, name, price, type
- * Order ? Dont think we need that table
- */
+        /*
+         * Staff - id, first name, last name, password, wage, isManager
+         * Menu - id, name, price, type
+         * Order ? Dont think we need that table
+         */
         try (Connection connection = ds.getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS staff (" +
                     "id INTEGER PRIMARY KEY NOT NULL," +
                     "first_name VARCHAR(20) NOT NULL," +
                     "last_name VARCHAR(20) NOT NULL," +
-                    "password VARCHAR(255) NOT NULL" +
-                    "wage FLOAT(10, 5) NOT NULL," +
+                    "password VARCHAR(255) NOT NULL," +
+                    "wage FLOAT(10) NOT NULL," +
                     "is_manager BOOLEAN NOT NULL DEFAULT FALSE" + // max: 99999.99999  : 10 digits, 5 decimals
                     ")");
 
