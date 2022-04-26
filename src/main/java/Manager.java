@@ -1,12 +1,10 @@
-package src.main.java;
-
 public class Manager extends Staff
 {
     private static final double MINIMUM_RATE = 100.0;
 
-    public Manager( int newID, String newLastName, String newFirstName, String newPassword)
+    public Manager( int newID, String newFirstName, String newLastName, String newPassword)
     {
-        super(newID, newLastName, newFirstName, newPassword);
+        super(newID, newFirstName, newLastName, newPassword);
         wageRate = MINIMUM_RATE;
     }
     

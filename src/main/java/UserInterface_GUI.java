@@ -1,5 +1,3 @@
-package src.main.java;
-
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -465,7 +463,7 @@ public class UserInterface_GUI extends JFrame implements ActionListener
                 if (btnLoginOK.getVerifyInputWhenFocusTarget()) {
                     //Try to get focus
                     btnLoginOK.requestFocusInWindow();
-                    if (!btnLoginOK.hasFocus()) {    //Can not get focus ?Ë the component have not been verified
+                    if (!btnLoginOK.hasFocus()) {    //Can not get focus ?ï¿½ the component have not been verified
                         return;
                     }
                 }
@@ -1171,7 +1169,7 @@ public class UserInterface_GUI extends JFrame implements ActionListener
                 if (btnOK.getVerifyInputWhenFocusTarget()) {
                     //Try to get focus
                     btnOK.requestFocusInWindow();
-                    if (!btnOK.hasFocus()) {    //Can not get focus ?Ë the component have not been verified
+                    if (!btnOK.hasFocus()) {    //Can not get focus ?ï¿½ the component have not been verified
                         return;
                     }
                 }

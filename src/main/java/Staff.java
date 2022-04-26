@@ -1,5 +1,3 @@
-package src.main.java;
-
 import java.util.*;
 import java.text.*;
 
@@ -18,11 +16,11 @@ public abstract class Staff
     protected double    wageRate;
 
     
-    public Staff( int newID, String newLastName, String newFirstName, String newPassword)
+    public Staff( int newID, String newFirstName, String newLastName, String newPassword)
     {
         setID( newID);
-        setLastName(newLastName);
         setFirstName(newFirstName);
+        setLastName(newLastName);
         setPassword( newPassword);
         startWorkTime = null;
         finishWorkTime = null;

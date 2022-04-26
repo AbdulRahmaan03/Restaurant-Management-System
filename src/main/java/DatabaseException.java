@@ -1,5 +1,3 @@
-package src.main.java;
-
 public class DatabaseException extends Exception {
     public String errMsg;
     public DatabaseException(String msg)

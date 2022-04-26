@@ -1,5 +1,3 @@
-package src.main.java;
-
 public class OrderDetail
 {
     private final int itemID;

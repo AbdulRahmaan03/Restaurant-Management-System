@@ -1,6 +1,6 @@
-package src.main.java;
-
 import com.mysql.cj.jdbc.MysqlDataSource;
+
+import javax.swing.*;
 import java.sql.*;
 import java.util.*;
 import java.io.*;
@@ -29,7 +29,7 @@ public class Database {
         todaysOrderCounts = 0;  //Load order file?? idk
 
         try {
-            Class.forName("com.mysql.jdbc.Driver").getDeclaredConstructor().newInstance();
+            Class.forName("com.mysql.cj.jdbc.Driver").getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -41,12 +41,6 @@ public class Database {
         ds.setUser(user);
         ds.setPassword(password);
 
-
-        /*
-         * Staff - id, first name, last name, password, wage, isManager
-         * Menu - id, name, price, type
-         * Order ? Dont think we need that table
-         */
         try (Connection connection = ds.getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS staff (" +
@@ -177,11 +171,22 @@ public class Database {
                     double wageRate = resultSet.getDouble("wage");
                     boolean isManager = resultSet.getBoolean("is_manager");
 
-                    Staff staff = isManager ?
-                            new Manager(id, firstName, lastName, pass) :
-                            new Employee(id, firstName, lastName, pass); // maybe isManager in Staff ?
-                    staff.setWageRate(wageRate);
-                    staffList.add(staff);
+                    if(isManager) {
+                        Manager rManager = new Manager(id,lastName,firstName, password);
+                        staffList.add(rManager);
+                        rManager.setWageRate(wageRate);
+                    }
+                    else {
+                        Employee rEmployee = new Employee(id,lastName, firstName, pass);
+                        staffList.add(rEmployee);
+                        rEmployee.setWageRate(wageRate);
+                    }
+
+                    //Staff staff = isManager ?
+                    //        new Manager(id, firstName, lastName, pass) :
+                    //        new Employee(id, firstName, lastName, pass); // maybe isManager in Staff ?
+                    //staff.setWageRate(wageRate);
+                    //staffList.add(staff);
                 }
             }
 
