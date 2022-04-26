@@ -51,9 +51,9 @@ public class Database {
              Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS staff (" +
                     "id INTEGER PRIMARY KEY NOT NULL," +
+                    "password VARCHAR(255) NOT NULL," +
                     "first_name VARCHAR(20) NOT NULL," +
                     "last_name VARCHAR(20) NOT NULL," +
-                    "password VARCHAR(255) NOT NULL," +
                     "wage FLOAT(10) NOT NULL," +
                     "is_manager BOOLEAN NOT NULL DEFAULT FALSE" + // max: 99999.99999  : 10 digits, 5 decimals
                     ")");
@@ -178,8 +178,8 @@ public class Database {
                     boolean isManager = resultSet.getBoolean("is_manager");
 
                     Staff staff = isManager ?
-                            new Manager(id, lastName, firstName, pass) :
-                            new Employee(id, lastName, firstName, pass); // maybe isManager in Staff ?
+                            new Manager(id, firstName, lastName, pass) :
+                            new Employee(id, firstName, lastName, pass); // maybe isManager in Staff ?
                     staff.setWageRate(wageRate);
                     staffList.add(staff);
                 }
