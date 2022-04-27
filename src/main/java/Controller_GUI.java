@@ -1,37 +1,32 @@
 import java.util.*;
 import java.text.*;
 
-public class Controller_GUI
-{
+public class Controller_GUI {
     private final UserInterface_GUI cView;
-    private final Database    cDatabase;
-    private int         currentUserID;
-    private String      currentUserName;
-    private final String      todaysDate;
+    private final Database cDatabase;
+    private int currentUserID;
+    private String currentUserName;
+    private final String todaysDate;
 
-    private int         todaysOrderCnt;     //Today's order count
-    private double      totalSales;         //Today's total sales
-    private int         todaysCancelCnt;    //Today's cancel count
-    private double      cancelTotal;        //Total cost of today's canceled orders
+    private int todaysOrderCnt;     //Today's order count
+    private double totalSales;         //Today's total sales
+    private int todaysCancelCnt;    //Today's cancel count
+    private double cancelTotal;        //Total cost of today's canceled orders
 
 
-    private String      errorMessage;
+    private String errorMessage;
 
-    public Controller_GUI()
-    {
-        try
-        {
+    public Controller_GUI() {
+        try {
             this.cDatabase = new Database();
             cDatabase.loadData();
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             System.out.println(de.getErrMessage()); // stack trace better
             System.exit(0);
             throw new IllegalStateException(); // to skip the initialization of cDatabase O_O
         }
 
-        cView = new UserInterface_GUI( this);
+        cView = new UserInterface_GUI(this);
 
         Date date = new Date();
         SimpleDateFormat stf = new SimpleDateFormat("yyyy/MM/dd");
@@ -45,91 +40,75 @@ public class Controller_GUI
         cancelTotal = 0;
     }
 
-    private void  setErrorMessage(String errorMessage)
-    {
+    private void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 
-    public String  getErrorMessage()
-    {
+    public String getErrorMessage() {
         String result = this.errorMessage;
         this.errorMessage = "";
         return result;
     }
 
-    public int getTodaysOrderCnt()
-    {
+    public int getTodaysOrderCnt() {
         return this.todaysOrderCnt;
     }
 
-    public int getTodaysCancelCnt()
-    {
+    public int getTodaysCancelCnt() {
         return this.todaysCancelCnt;
     }
 
-    public double getTotalSales()
-    {
+    public double getTotalSales() {
         return this.totalSales;
     }
 
-    public double getCancelTotal()
-    {
+    public double getCancelTotal() {
         return this.cancelTotal;
     }
 
-    public double getOrderTotalCharge(int orderID)
-    {
+    public double getOrderTotalCharge(int orderID) {
         return cDatabase.getOrderTotalCharge(orderID);
     }
 
-    public int getOrderState(int orderID)
-    {
+    public int getOrderState(int orderID) {
         return cDatabase.getOrderState(orderID);
     }
 
-    public String getCurrentUserName()
-    {
+    public String getCurrentUserName() {
         return this.currentUserName;
     }
 
-    public boolean checkIfUserClockedOut()
-    {
-        Staff   rStaff = cDatabase.findStaffByID(currentUserID);
+    public boolean checkIfUserClockedOut() {
+        Staff rStaff = cDatabase.findStaffByID(currentUserID);
 
-        if( rStaff == null) return false;
+        if (rStaff == null) return false;
         return rStaff.getWorkState() == Staff.WORKSTATE_ACTIVE;
     }
 
     // Login
 
     // Find user
-    public boolean loginCheck( int inputID, String inputPassword, boolean isManager)
-    {
+    public boolean loginCheck(int inputID, String inputPassword, boolean isManager) {
         String searchClassName;
 
         //---------search user----------
-        Staff   rStaff = cDatabase.findStaffByID(inputID);
+        Staff rStaff = cDatabase.findStaffByID(inputID);
 
-        if(isManager)   searchClassName = "Manager";
-        else            searchClassName = "Employee";
+        if (isManager) searchClassName = "Manager";
+        else searchClassName = "Employee";
 
-        if( rStaff != null)//User data is found
+        if (rStaff != null)//User data is found
         {
             //Search only particular target(Manager or Employee)
-            if( rStaff.getClass().getName().equalsIgnoreCase(searchClassName))
-            {
-                if(rStaff.getPassword().equals(inputPassword))
-                {
-                    if(rStaff.getWorkState() == 0)  //Not clocked in yet
+            if (rStaff.getClass().getName().equalsIgnoreCase(searchClassName)) {
+                if (rStaff.getPassword().equals(inputPassword)) {
+                    if (rStaff.getWorkState() == 0)  //Not clocked in yet
                     {
                         rStaff.clockIn();
                     }
-                    if(isManager)
-                    {
+                    if (isManager) {
                         cView.changeMode(UserInterface_GUI.MODE_MANAGER);
-                    }
-                    else
-                    {
+                    } else {
                         cView.changeMode(UserInterface_GUI.MODE_EMPLOYEE);
                     }
                     currentUserID = inputID;
@@ -137,21 +116,15 @@ public class Controller_GUI
                     cView.setLoginUserName(currentUserName);  //show username on the view
 
                     return true; //Login success
-                }
-                else
-                {
+                } else {
                     setErrorMessage("Wrong Password!.");
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 setErrorMessage("Not found.");
                 return false;
             }
-        }
-        else
-        {
+        } else {
             setErrorMessage("Not found.");
             return false;
         }
@@ -159,81 +132,63 @@ public class Controller_GUI
     }
 
     // Logout (Set state as Anonymous)
-    public void userLogout()
-    {
+    public void userLogout() {
         currentUserID = 0;
         cView.setLoginUserName("");
     }
 
     // Staff management
-    public boolean addNewStaff(int newID, String newPassword, String newFirstName, String newLastName, boolean isManager)
-    {
+    public boolean addNewStaff(int newID, String newPassword, String newFirstName, String newLastName, boolean isManager) {
         Staff rStaff = cDatabase.findStaffByID(newID);
-        if(rStaff != null)
-        {
+        if (rStaff != null) {
             setErrorMessage("ID:" + newID + " is already used by " + rStaff.getFullName());
             return false;
         }
 
-        try
-        {
+        try {
             cDatabase.addStaff(newID, newPassword, newFirstName, newLastName, isManager);
             return true;
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
     }
 
-    public boolean updateStaff(int id, String newPassword, String newFirstName, String newLastName)
-    {
-        try
-        {
+    public boolean updateStaff(int id, String newPassword, String newFirstName, String newLastName) {
+        try {
             cDatabase.editStaffData(id, newPassword, newFirstName, newLastName);
             return true;
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
     }
 
-    public boolean deleteStaff(int id)
-    {
+    public boolean deleteStaff(int id) {
         Staff rStaff = cDatabase.findStaffByID(id);
-        if(rStaff == null)
-        {
+        if (rStaff == null) {
             setErrorMessage("StaffID:" + id + " is not found.");
             return false;
         }
 
-        try
-        {
+        try {
             cDatabase.deleteStaff(rStaff);
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
         return true;
     }
 
-    public Staff    getStaffData(int staffID)
-    {
+    public Staff getStaffData(int staffID) {
         return cDatabase.findStaffByID(staffID);
     }
 
-    public void clockOut()
-    {
+    public void clockOut() {
         clockOut(currentUserID);
     }
 
-    public boolean clockOut(int staffID)
-    {
+    public boolean clockOut(int staffID) {
         Staff rStaff = cDatabase.findStaffByID(staffID);
 
         byte state = rStaff.getWorkState();
@@ -250,92 +205,73 @@ public class Controller_GUI
         return result;
     }
 
-    public void clockOutAll()
-    {
+    public void clockOutAll() {
         cDatabase.forthClockOutAllStaff();
     }
 
     // Menu management
-    public boolean addNewMenuItem(int newID, String newName, double newPrice, byte menuType)
-    {
+    public boolean addNewMenuItem(int newID, String newName, double newPrice, byte menuType) {
         MenuItem rMenuItem = cDatabase.findMenuItemByID(newID);
-        if(rMenuItem != null)
-        {
+        if (rMenuItem != null) {
             setErrorMessage("ID:" + newID + " is already used by " + rMenuItem.getName());
             return false;
         }
 
-        try
-        {
+        try {
             cDatabase.addMenuItem(newID, newName, newPrice, menuType);
             return true;
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
     }
 
-    public boolean updateMenuItem(int id, String newName, double newPrice, byte menuType)
-    {
-        try
-        {
+    public boolean updateMenuItem(int id, String newName, double newPrice, byte menuType) {
+        try {
             cDatabase.editMenuItemData(id, newName, newPrice, menuType);
             return true;
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
     }
 
-    public boolean deleteMenuItem(int id)
-    {
-        MenuItem rMenuItem= cDatabase.findMenuItemByID(id);
-        if(rMenuItem == null)
-        {
+    public boolean deleteMenuItem(int id) {
+        MenuItem rMenuItem = cDatabase.findMenuItemByID(id);
+        if (rMenuItem == null) {
             setErrorMessage("Menu item ID:" + id + " is not found.");
             return false;
         }
 
-        try
-        {
+        try {
             cDatabase.deleteMenuItem(rMenuItem);
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return false;
         }
         return true;
     }
 
-    public MenuItem    getMenuItemData(int menuItemID)
-    {
+    public MenuItem getMenuItemData(int menuItemID) {
         return cDatabase.findMenuItemByID(menuItemID);
     }
+
     // Order management
-    public int createOrder()
-    {
+    public int createOrder() {
         return cDatabase.addOrder(currentUserID, currentUserName);
     }
 
-    public boolean addNewOrderItem(int orderID, int addItemID, byte addItemQuantity)
-    {
+    public boolean addNewOrderItem(int orderID, int addItemID, byte addItemQuantity) {
         Order rOrder = cDatabase.findOrderByID(orderID);
-        if( currentUserID != rOrder.getStaffID())
-        {
+        if (currentUserID != rOrder.getStaffID()) {
             setErrorMessage("You are not eligible to edit the order.\nThe order belongs to " + rOrder.getStaffName() + ")");
             return false;
         }
 
-        MenuItem    rNewItem;
+        MenuItem rNewItem;
 
         rNewItem = cDatabase.findMenuItemByID(addItemID);
-        if(rNewItem == null)
-        {
+        if (rNewItem == null) {
             setErrorMessage("MenuID[" + addItemID + "]is not found.");
             return false;
         }
@@ -343,35 +279,29 @@ public class Controller_GUI
         return true;
     }
 
-    public boolean deleteOrderItem(int orderID, int deleteNo)
-    {
+    public boolean deleteOrderItem(int orderID, int deleteNo) {
         Order rOrder = cDatabase.findOrderByID(orderID);
-        if( currentUserID != rOrder.getStaffID())
-        {
+        if (currentUserID != rOrder.getStaffID()) {
             setErrorMessage("You are not eligible to delete the order.\nThe order belongs to " + rOrder.getStaffName() + ")");
             return false;
         }
 
-        deleteNo -=1;  //index actually starts from zero
-        if(!cDatabase.deleteOrderItem(orderID, deleteNo))
-        {
+        deleteNo -= 1;  //index actually starts from zero
+        if (!cDatabase.deleteOrderItem(orderID, deleteNo)) {
             setErrorMessage("Not found.");
             return false;
         }
         return true;
     }
 
-    public boolean closeOrder(int closeOrderID)
-    {
+    public boolean closeOrder(int closeOrderID) {
         Order rOrder = cDatabase.findOrderByID(closeOrderID);
-        if( currentUserID != rOrder.getStaffID())
-        {
+        if (currentUserID != rOrder.getStaffID()) {
             setErrorMessage("You are not eligible to delete the order.\n(The order belongs to " + rOrder.getStaffName() + ")");
             return false;
         }
 
-        if(rOrder.getState() != 0)
-        {
+        if (rOrder.getState() != 0) {
             setErrorMessage("The order is already closed or canceled.");
             return false;
         }
@@ -381,17 +311,14 @@ public class Controller_GUI
         return true;
     }
 
-    public boolean cancelOrder(int cancelOrderID)
-    {
+    public boolean cancelOrder(int cancelOrderID) {
         Order rOrder = cDatabase.findOrderByID(cancelOrderID);
-        if( currentUserID != rOrder.getStaffID())
-        {
+        if (currentUserID != rOrder.getStaffID()) {
             setErrorMessage("You are not eligible to delete the order.\n(The order belongs to " + rOrder.getStaffName() + ")");
             return false;
         }
 
-        if( rOrder.getState() != 0)
-        {
+        if (rOrder.getState() != 0) {
             setErrorMessage("The order is already closed or canceled.");
             return false;
         }
@@ -402,52 +329,40 @@ public class Controller_GUI
         return true;
     }
 
-    public void closeAllOrder()
-    {
+    public void closeAllOrder() {
         cDatabase.closeAllOrder();
     }
 
-    public String generateSalesReport()
-    {
-        if(!cDatabase.checkIfAllOrderClosed())
-        {
+    public String generateSalesReport() {
+        if (!cDatabase.checkIfAllOrderClosed()) {
             setErrorMessage("All orders must be closed or canceled before generate reports.");
             return null;
         }
 
-        try
-        {
+        try {
             return cDatabase.generateOrderReport(todaysDate);
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return null;
         }
     }
 
-    public String generatePaymentReport()
-    {
-        if(!cDatabase.checkIfAllStaffCheckout())
-        {
+    public String generatePaymentReport() {
+        if (!cDatabase.checkIfAllStaffCheckout()) {
             setErrorMessage("All staff must be checked out before generate a payment report.");
             return null;
         }
 
-        try
-        {
+        try {
             return cDatabase.generatePaymentReport(todaysDate);
-        }
-        catch(DatabaseException de)
-        {
+        } catch (DatabaseException de) {
             setErrorMessage(de.getErrMessage());
             return null;
         }
     }
 
     // Create string lists
-    public  ArrayList<String>  createStaffList()
-    {
+    public ArrayList<String> createStaffList() {
         Iterator<Staff> it = cDatabase.getStaffList().iterator();
         ArrayList<String> initData = new ArrayList<>();
 
@@ -458,12 +373,12 @@ public class Controller_GUI
                     re.getID(), fullName);
             switch (re.getWorkState()) {
                 case Staff.WORKSTATE_ACTIVE -> output += "[From:" + re.getStartTime() + "]";
-                case Staff.WORKSTATE_FINISH -> output += "[From:" + re.getStartTime() + " to " + re.getFinishTime() + "]";
+                case Staff.WORKSTATE_FINISH ->
+                        output += "[From:" + re.getStartTime() + " to " + re.getFinishTime() + "]";
                 default -> output += "[Not on work]";
             }
 
-            if(re instanceof Manager)
-            {
+            if (re instanceof Manager) {
                 output += " * Manager *";
             }
             initData.add(output);
@@ -472,12 +387,11 @@ public class Controller_GUI
         return initData;
     }
 
-    public ArrayList<String>  createOrderList()
-    {
+    public ArrayList<String> createOrderList() {
         Iterator<Order> it = cDatabase.getOrderList().iterator();
-        String          state;
+        String state;
         ArrayList<String> initData = new ArrayList<>();
-        String          output;
+        String output;
 
         while (it.hasNext()) {
             Order re = it.next();
@@ -488,21 +402,19 @@ public class Controller_GUI
             };
 
             output = String.format("Order ID:%4d  StaffName:%-20s  Total:$%5.2f State:%-8s\n",
-                    re.getOrderID(),re.getStaffName(),re.getTotal(),state);
+                    re.getOrderID(), re.getStaffName(), re.getTotal(), state);
             initData.add(output);
         }
-        if(initData.isEmpty())
+        if (initData.isEmpty())
             initData.add("No order.");
         return initData;
     }
 
-    public ArrayList<String> createOrderItemlList(int orderID)
-    {
+    public ArrayList<String> createOrderItemlList(int orderID) {
         Order rOrder = cDatabase.findOrderByID(orderID);
         ArrayList<String> initData = new ArrayList<>();
 
-        if(rOrder == null)
-        {
+        if (rOrder == null) {
             initData.add("No order information");
             return initData;
         }
@@ -510,7 +422,7 @@ public class Controller_GUI
         String output;
 
         Iterator<OrderDetail> it = rOrder.getOrderDetail().iterator();
-        OrderDetail    re;
+        OrderDetail re;
 
         int count = 0;
 
@@ -520,20 +432,19 @@ public class Controller_GUI
                     ++count, re.getItemName(), re.getQuantity(), re.getTotalPrice());
             initData.add(output);
         }
-        if(initData.isEmpty())
+        if (initData.isEmpty())
             initData.add("No item");
         return initData;
     }
 
-    public ArrayList<String> createMenuList(int displayMenuType)
-    {
+    public ArrayList<String> createMenuList(int displayMenuType) {
         Iterator<MenuItem> it = cDatabase.getMenuList().iterator();
         ArrayList<String> initData = new ArrayList<>();
 
         while (it.hasNext()) {
             MenuItem re = it.next();
             byte menuType = re.getType();
-            if(displayMenuType!= 0 && displayMenuType != menuType)
+            if (displayMenuType != 0 && displayMenuType != menuType)
                 continue;
             String strMenuType = switch (menuType) {
                 case MenuItem.BREAKFAST -> "Breakfast";
@@ -543,23 +454,21 @@ public class Controller_GUI
                 default -> "Undefined";
             };
             String output = String.format("Menu ID:%4d  Name:%-20s  Price:%5.2f Type:%s",
-                    re.getID(),re.getName(),re.getPrice(),strMenuType);
-            if(re.getState() == MenuItem.PROMOTION_ITEM)
-            {
+                    re.getID(), re.getName(), re.getPrice(), strMenuType);
+            if (re.getState() == MenuItem.PROMOTION_ITEM) {
                 output += " ** Today's Special!! **";
             }
 
             initData.add(output);
         }
-        if(initData.isEmpty())
+        if (initData.isEmpty())
             initData.add("No order.");
         return initData;
     }
 
-    public String createPaymentList()
-    {
-        double          totalPayment = 0;
-        int             staffNum = 0;
+    public String createPaymentList() {
+        double totalPayment = 0;
+        int staffNum = 0;
         StringBuilder output = new StringBuilder();
 
         for (Staff re : cDatabase.getStaffList()) {

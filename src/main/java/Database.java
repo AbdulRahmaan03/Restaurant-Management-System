@@ -171,13 +171,12 @@ public class Database {
                     double wageRate = resultSet.getDouble("wage");
                     boolean isManager = resultSet.getBoolean("is_manager");
 
-                    if(isManager) {
-                        Manager rManager = new Manager(id,lastName,firstName, password);
+                    if (isManager) {
+                        Manager rManager = new Manager(id, lastName, firstName, password);
                         staffList.add(rManager);
                         rManager.setWageRate(wageRate);
-                    }
-                    else {
-                        Employee rEmployee = new Employee(id,lastName, firstName, pass);
+                    } else {
+                        Employee rEmployee = new Employee(id, lastName, firstName, pass);
                         staffList.add(rEmployee);
                         rEmployee.setWageRate(wageRate);
                     }

@@ -1,22 +1,20 @@
-public class MenuItem
-{
+public class MenuItem {
     //definition of menu item type
     public final static int BREAKFAST = 1;
     public final static int LUNCH = 2;
     public final static int DINNER = 3;
     public final static int DESSERT = 4;
-    
+
     private final int ID;
     private String name;
     private byte type;
     private double price;
-    
-    private byte     state;
-    private double  promotion_price;
+
+    private byte state;
+    private double promotion_price;
     public final static byte PROMOTION_ITEM = 1;
-    
-    public MenuItem(int newID, String newName, double newPrice, byte newType)
-    {
+
+    public MenuItem(int newID, String newName, double newPrice, byte newType) {
         this.ID = newID;
         this.name = newName;
         this.price = newPrice;
@@ -26,62 +24,50 @@ public class MenuItem
     }
 
     //setter
-    public void setName( String newName)
-    {
+    public void setName(String newName) {
         this.name = newName;
     }
-    
-    public void setPrice( double newPrice)
-    {
+
+    public void setPrice(double newPrice) {
         this.price = newPrice;
     }
-    
-    public void setType( byte newType)
-    {
+
+    public void setType(byte newType) {
         this.type = newType;
     }
-    
-    public void setState( byte newState, double tempPrice)
-    {
+
+    public void setState(byte newState, double tempPrice) {
         this.state = newState;
         this.promotion_price = tempPrice;
     }
-    
-    public void resetState()
-    {
+
+    public void resetState() {
         this.state = 0;
         this.promotion_price = 0;
     }
-    
-    
+
+
     //getter
-    int getID()
-    {
+    int getID() {
         return this.ID;
     }
-    
-    String getName()
-    {
+
+    String getName() {
         return this.name;
     }
-    
-    double getPrice()
-    {
-        if(this.state != 0 && this.promotion_price != 0)
-        {
+
+    double getPrice() {
+        if (this.state != 0 && this.promotion_price != 0) {
             return this.promotion_price;
-        }
-        else
+        } else
             return this.price;
     }
 
-    byte getType()
-    {
+    byte getType() {
         return this.type;
     }
-    
-    byte getState()
-    {
+
+    byte getState() {
         return this.state;
     }
 }
